@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 '''
 Sitemap
 -------
@@ -60,6 +60,7 @@ class SitemapGenerator(object):
         self.context = context
         self.now = datetime.now()
         self.siteurl = settings.get('SITEURL')
+        self.exclude = settings.get('SITEMAP_EXCLUDE')
 
         self.format = 'xml'
 
@@ -77,6 +78,10 @@ class SitemapGenerator(object):
 
         config = settings.get('SITEMAP', {})
 
+        if self.exclude and not isinstance(self.exclude, list):
+            warning("sitemap plugin: the SITEMAP_EXCLUDE setting must be a list")
+            self.exclude = []
+        
         if not isinstance(config, dict):
             warning("sitemap plugin: the SITEMAP setting must be a dict")
         else:
@@ -180,10 +185,13 @@ class SitemapGenerator(object):
     def generate_output(self, writer):
         path = os.path.join(self.output_path, 'sitemap.{0}'.format(self.format))
 
-        pages = self.context['pages'] + self.context['articles'] \
-                + [ c for (c, a) in self.context['categories']] \
-                + [ t for (t, a) in self.context['tags']] \
-                + [ a for (a, b) in self.context['authors']]
+        pages = self.context['pages'] + self.context['articles']
+        if 'categories' not in self.exclude:
+            pages += [ c for (c, a) in self.context['categories']] 
+        if 'tags' not in self.exclude:
+            pages += [ t for (t, a) in self.context['tags']] 
+        if 'authors' not in self.exclude:
+            pages += [ a for (a, b) in self.context['authors']]
 
         self.set_url_wrappers_modification_date(self.context['categories'])
         self.set_url_wrappers_modification_date(self.context['tags'])
